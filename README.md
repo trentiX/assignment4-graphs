@@ -119,7 +119,7 @@ Graphs were built with the following edge pattern: each vertex `i` connects to v
 ![Performance summary table](docs/screenshots/output2.png)
 
 ### Dijkstra Output (Bonus)
-![Dijkstra shortest path output](docs/screenshots/dijkstra_output.png)
+![Dijkstra shortest path output](docs/screenshots/output3.png)
 
 ---
 
