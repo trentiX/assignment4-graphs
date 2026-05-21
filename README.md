@@ -128,16 +128,101 @@ The biggest challenge was implementing DFS iteratively rather than recursively. 
 
 ---
 
-## Repository Structure
+## G. Bonus Task — Dijkstra's Algorithm
+
+### What is Dijkstra's Algorithm?
+
+Dijkstra's algorithm finds the **shortest path** from one starting vertex to all other vertices in a **weighted graph**. Unlike BFS (which finds shortest path by number of edges), Dijkstra works with edge **weights** — meaning some roads are longer than others.
+
+**Real-world example:** Google Maps finding the fastest route between two cities.
+
+---
+
+### Changes Made to Support Weights
+
+**`Edge.java`** — added a `weight` field:
+```java
+private int weight;
+public Edge(Vertex source, Vertex destination, int weight) { ... }
+public int getWeight() { return weight; }
+```
+
+**`Graph.java`** — adjacency list now stores `int[]` pairs `[neighborId, weight]`:
+```java
+Map<Integer, List<int[]>> adjList;
+// addEdge now accepts weight:
+public void addEdge(int from, int to, int weight)
+// backward-compatible unweighted version still works:
+public void addEdge(int from, int to) { addEdge(from, to, 1); }
+```
+
+---
+
+### Algorithm — Step by Step
+
+```
+1. Set dist[start] = 0, dist[all others] = ∞
+2. Repeat V times:
+   a. Pick unvisited vertex u with smallest dist[u]
+   b. Mark u as visited (finalized)
+   c. For each neighbor v of u:
+      if dist[u] + weight(u,v) < dist[v]:
+          dist[v] = dist[u] + weight(u,v)   ← "relaxation"
+3. Print all distances
+```
+
+The key step is **relaxation** — every time we visit a vertex, we check if we found a shorter path to its neighbors and update if yes.
+
+**Time complexity:** O(V²) — simple array-based implementation without priority queue, as required.
+
+---
+
+### Example Graph and Output
+
+```
+Weighted graph:
+  0 -> [1(w=4), 2(w=1), 5(w=10)]
+  1 -> [3(w=1)]
+  2 -> [1(w=2), 3(w=5)]
+  3 -> [4(w=3)]
+  4 -> [5(w=2)]
+  5 -> []
+```
+
+```
+Dijkstra shortest distances from vertex 0:
+  Vertex 0: 0
+  Vertex 1: 3   ← via 0→2→1 (1+2=3), NOT 0→1 (4)
+  Vertex 2: 1   ← direct
+  Vertex 3: 4   ← via 0→2→1→3 (1+2+1=4)
+  Vertex 4: 7   ← via ...→3→4 (4+3=7)
+  Vertex 5: 9   ← via ...→4→5 (7+2=9), NOT 0→5 (10)
+```
+
+Notice vertex 1: the direct path `0→1` costs 4, but going `0→2→1` costs only 3. Dijkstra correctly finds the cheaper route.
+
+---
+
+### Why Dijkstra and Not BFS?
+
+BFS finds shortest path **by number of edges** — it treats all edges as equal. If edges have different weights, BFS gives wrong answers. Dijkstra always picks the globally cheapest unvisited vertex next, so it guarantees the correct shortest distance even with varying weights.
+
+**Limitation:** Dijkstra does **not** work with negative edge weights.
+
+---
 
 ```
 assignment4-graphs/
 ├── src/
 │   ├── Vertex.java
-│   ├── Edge.java
-│   ├── Graph.java
+│   ├── Edge.java          ← updated: added weight field
+│   ├── Graph.java         ← updated: weighted edges + dijkstra()
 │   ├── Experiment.java
-│   └── Main.java
+│   └── Main.java          ← updated: Dijkstra demo added
+├── docs/
+│   └── screenshots/
+│       ├── output1.png
+│       └── output2.png
 ├── README.md
 └── .gitignore
 ```
@@ -154,4 +239,9 @@ feat(experiment): added performance testing
 docs(readme): added analysis and results
 perf(cleanup): improved code readability
 release: v1.0
+bonus(edge): added weight field to Edge class
+bonus(graph): updated adjacency list to support weighted edges
+bonus(dijkstra): implemented Dijkstra shortest path algorithm
+bonus(main): added Dijkstra demo to Main
+docs(readme): documented bonus Dijkstra implementation
 ```
