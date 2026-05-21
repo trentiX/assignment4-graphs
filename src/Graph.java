@@ -1,14 +1,14 @@
 import java.util.*;
 
 /**
- * Represents a graph using an adjacency list.
- * Supports directed edges and BFS/DFS traversals.
+ * Represents a graph using a weighted adjacency list.
+ * Supports BFS, DFS, and Dijkstra's shortest path algorithm.
  */
 public class Graph {
     // Maps vertex id -> Vertex object
     private Map<Integer, Vertex> vertices;
-    // Adjacency list: vertex id -> list of neighbor vertex ids
-    private Map<Integer, List<Integer>> adjList;
+    // Weighted adjacency list: vertex id -> list of [neighborId, weight]
+    private Map<Integer, List<int[]>> adjList;
 
     public Graph() {
         vertices = new HashMap<>();
@@ -24,65 +24,71 @@ public class Graph {
     }
 
     /**
-     * Add a directed edge from vertex 'from' to vertex 'to'.
-     * Both vertices must already exist in the graph.
+     * Add a directed weighted edge from 'from' to 'to'.
+     * Both vertices must already exist.
      */
-    public void addEdge(int from, int to) {
+    public void addEdge(int from, int to, int weight) {
         if (!adjList.containsKey(from) || !adjList.containsKey(to)) {
             throw new IllegalArgumentException("Vertex not found: " + from + " or " + to);
         }
-        adjList.get(from).add(to);
+        adjList.get(from).add(new int[]{to, weight});
     }
 
-    /** Print the adjacency list representation of the graph. */
+    /** Convenience method: unweighted edge (weight = 1) */
+    public void addEdge(int from, int to) {
+        addEdge(from, to, 1);
+    }
+
+    /** Print the adjacency list with weights. */
     public void printGraph() {
-        System.out.println("Graph adjacency list:");
+        System.out.println("Graph adjacency list (weighted):");
         for (int id : adjList.keySet()) {
             System.out.print("  " + id + " -> ");
-            System.out.println(adjList.get(id));
+            List<int[]> neighbors = adjList.get(id);
+            if (neighbors.isEmpty()) {
+                System.out.println("[]");
+            } else {
+                StringJoiner sj = new StringJoiner(", ", "[", "]");
+                for (int[] nb : neighbors) sj.add(nb[0] + "(w=" + nb[1] + ")");
+                System.out.println(sj);
+            }
         }
     }
 
+    // ----------------------------------------------------------------
+    // BFS
+    // ----------------------------------------------------------------
     /**
-     * Breadth-First Search starting from vertex 'start'.
-     * Visits all reachable vertices level by level using a queue.
+     * Breadth-First Search from 'start'.
      * Time complexity: O(V + E)
-     *
-     * @param start starting vertex id
-     * @return ordered list of visited vertex ids
      */
     public List<Integer> bfs(int start) {
         List<Integer> order = new ArrayList<>();
         Set<Integer> visited = new HashSet<>();
         Queue<Integer> queue = new LinkedList<>();
 
-        // Enqueue the starting vertex and mark it visited
         queue.add(start);
         visited.add(start);
 
         while (!queue.isEmpty()) {
             int current = queue.poll();
             order.add(current);
-
-            // Visit all unvisited neighbors
-            for (int neighbor : adjList.get(current)) {
-                if (!visited.contains(neighbor)) {
-                    visited.add(neighbor);
-                    queue.add(neighbor);
+            for (int[] nb : adjList.get(current)) {
+                if (!visited.contains(nb[0])) {
+                    visited.add(nb[0]);
+                    queue.add(nb[0]);
                 }
             }
         }
         return order;
     }
 
+    // ----------------------------------------------------------------
+    // DFS
+    // ----------------------------------------------------------------
     /**
-     * Depth-First Search starting from vertex 'start'.
-     * Explores as far as possible along each branch before backtracking.
-     * Uses an explicit stack (iterative) to avoid stack overflow on large graphs.
+     * Depth-First Search from 'start' (iterative).
      * Time complexity: O(V + E)
-     *
-     * @param start starting vertex id
-     * @return ordered list of visited vertex ids
      */
     public List<Integer> dfs(int start) {
         List<Integer> order = new ArrayList<>();
@@ -93,22 +99,79 @@ public class Graph {
 
         while (!stack.isEmpty()) {
             int current = stack.pop();
-
-            // Skip if already visited (may be pushed multiple times)
             if (visited.contains(current)) continue;
 
             visited.add(current);
             order.add(current);
 
-            // Push neighbors in reverse order to maintain natural traversal direction
-            List<Integer> neighbors = adjList.get(current);
+            List<int[]> neighbors = adjList.get(current);
             for (int i = neighbors.size() - 1; i >= 0; i--) {
-                if (!visited.contains(neighbors.get(i))) {
-                    stack.push(neighbors.get(i));
+                if (!visited.contains(neighbors.get(i)[0])) {
+                    stack.push(neighbors.get(i)[0]);
                 }
             }
         }
         return order;
+    }
+
+    // ----------------------------------------------------------------
+    // Dijkstra
+    // ----------------------------------------------------------------
+    /**
+     * Dijkstra's Algorithm — finds shortest distances from 'start' to all vertices.
+     *
+     * How it works:
+     *  1. Set distance to start = 0, all others = infinity.
+     *  2. Repeat V times:
+     *     a. Pick the unvisited vertex with the smallest known distance.
+     *     b. Mark it visited.
+     *     c. For each neighbor: if dist[current] + weight < dist[neighbor], update it.
+     *  3. Print the result.
+     *
+     * Time complexity: O(V²) — simple array-based implementation (no priority queue).
+     *
+     * @param start starting vertex id
+     */
+    public void dijkstra(int start) {
+        int n = vertices.size();
+        int[] dist    = new int[n];       // shortest distance from start to each vertex
+        boolean[] vis = new boolean[n];   // whether vertex has been finalized
+
+        // Step 1: initialize all distances to infinity
+        Arrays.fill(dist, Integer.MAX_VALUE);
+        dist[start] = 0;
+
+        for (int iter = 0; iter < n; iter++) {
+            // Step 2a: find unvisited vertex with minimum distance
+            int u = -1;
+            for (int v = 0; v < n; v++) {
+                if (!vis[v] && (u == -1 || dist[v] < dist[u])) {
+                    u = v;
+                }
+            }
+
+            if (u == -1 || dist[u] == Integer.MAX_VALUE) break; // remaining unreachable
+
+            // Step 2b: mark as visited (finalized)
+            vis[u] = true;
+
+            // Step 2c: relax neighbors
+            if (!adjList.containsKey(u)) continue;
+            for (int[] nb : adjList.get(u)) {
+                int v = nb[0], w = nb[1];
+                if (dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                }
+            }
+        }
+
+        // Step 3: print results
+        System.out.println("Dijkstra shortest distances from vertex " + start + ":");
+        for (int v = 0; v < n; v++) {
+            if (!vertices.containsKey(v)) continue;
+            String distStr = (dist[v] == Integer.MAX_VALUE) ? "unreachable" : String.valueOf(dist[v]);
+            System.out.printf("  Vertex %d: %s%n", v, distStr);
+        }
     }
 
     public int vertexCount() { return vertices.size(); }
