@@ -118,6 +118,9 @@ Graphs were built with the following edge pattern: each vertex `i` connects to v
 ### Performance Results (Full Run)
 ![Performance summary table](docs/screenshots/output2.png)
 
+### Dijkstra Output (Bonus)
+![Dijkstra shortest path output](docs/screenshots/dijkstra_output.png)
+
 ---
 
 ## F. Reflection
@@ -211,6 +214,8 @@ BFS finds shortest path **by number of edges** — it treats all edges as equal.
 
 ---
 
+## Repository Structure
+
 ```
 assignment4-graphs/
 ├── src/
@@ -222,7 +227,8 @@ assignment4-graphs/
 ├── docs/
 │   └── screenshots/
 │       ├── output1.png
-│       └── output2.png
+│       ├── output2.png
+│       └── dijkstra_output.png
 ├── README.md
 └── .gitignore
 ```
